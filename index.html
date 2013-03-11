@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>I Have No Thumbs</title>
+    <meta charset="UTF-8" />
+    <meta name="google" content="notranslate">
+    <meta http-equiv="Content-Language" content="en" />
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1/themes/base/jquery-ui.css" />
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.1/jquery-ui.min.js"></script>
+  </head>
+  <body>
+    <script type=text/javascript>
+      function getUrlVars() {
+        var vars = {};
+        var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+            vars[key] = value;
+        });
+        return vars;
+      }
+
+      function display_san_list() {
+        $("#sanlist").empty().append("<h1>SAN List</h1>");
+
+        $.ajax({
+          url: "json/san_host_list.php",
+          type: "GET",
+          dataType: "json",
+          success: function (result) {
+            console.log(result);
+            if (result.hasOwnProperty('error')) {
+              $.each(result.error, function(idx, val) {
+                $("#error").append(val);
+              });
+            } else {
+              $.each(result, function(idx,val) {
+                if (val.active % 2  == 1) {
+                    var button = "<button id=" + val._id.$id + ">Deactivate</button>";
+                } else { 
+                    var button = "<button id=" + val._id.$id + ">Activate</button>";
+                }
+                $("#sanlist").append("<p id=" + val.sanname + ">" + val.sanname + " " + button + "<br></p>");
+                $.each(val.sp, function(s_idx,s_val) {
+                  $("#" + val.sanname).append("<a href='stats.html?id=" + s_val._id.$id + "'>" + s_val.hostname + "</a><br>");
+                });
+                //$("#" + val.sanname).append(
+              });
+            }
+            //display_san(result);
+          },
+          error: function (xhr) {
+            $("#error").empty().append("Ajax error json/list_san.php");
+            console.log(xhr);
+          }
+        });
+      }
+
+      $(document).on('click', 'button', function(event) {
+        console.log($(this).attr('id'));
+        $.ajax({
+          url: "json/san_host_toggle.php?id=" + $(this).attr('id'),
+          type: "GET",
+          dataType: "json",
+          success: function (result) {
+            console.log(result);
+            display_san_list();
+          },
+          error: function (xhr) {
+            $("#error").empty().append("Ajax error json/list_san.php");
+            console.log(xhr);
+          }
+        })
+      }); 
+
+      $(document).ready(function() {
+        $("#error").empty();
+        $("input").tooltip();
+        // Display the current list of SAN's
+        display_san_list(); 
+ 
+        var request; 
+        $("#san_input").submit(function (event) {
+          event.preventDefault();
+          if (request) {
+            request.abort();
+          }
+          var serializedData = $(this).serialize();
+          var $inputs = $(this).find("input");
+          $inputs.prop("disabled", true);
+  
+          var request = $.ajax({
+            url: "json/san_host_add.php",
+            type: "POST",
+            data: serializedData,
+            dataType: "json",
+            success: function (result) {
+              console.log(result);
+              if (result.hasOwnProperty('error')) {
+                $.each(result.error, function(idx, val) { 
+                  $("#error").append(val);
+                });
+              } 
+              display_san_list();
+            },
+            error: function (xhr) {
+              console.log(xhr);
+              $("#error").empty().append("AJAX Error json/add_san.php");
+            }
+          });
+          request.always(function() {
+            $inputs.prop("disabled", false);
+          });
+        }); 
+        $("#loading").empty();
+        $("#input_form").show();
+      });
+      
+    </script>
+    <div id=loading>Loading.....Data</div>
+    <div id=error></div>
+    <div id=sanlist></div>
+    <div id=input_form style="display : none">
+      <form id=san_input>
+        <table>
+          <tr>
+            <th colspan=2>Add New SAN</th>
+          </tr>
+          <tr>
+            <td><label>SAN Name:</label></td><td><input type=text name=sanname id=form_vnxname title="Friendly name that you know this SAN by."/></td>
+          </tr>
+          <tr>
+            <td><label>SPA Hostname:</label></td><td><input type=text name=spa id=form_spa title="Hostaname of the SP."/></td>
+          </tr>
+          <tr>
+            <td><label>SPB Hostname:</label></td><td><input type=text name=spb id=form_spb title="Hostaname of the SP."/></td>
+          </tr>
+          <tr>
+            <td colspan=2><input type=submit id=form_submit value=Add></td>
+          </tr>
+        </table>
+      </form>
+  </body>
+</html>

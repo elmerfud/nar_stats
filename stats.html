@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>I Have No Thumbs</title>
+    <meta charset="UTF-8" />
+    <meta name="google" content="notranslate">
+    <meta http-equiv="Content-Language" content="en" />
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1/themes/base/jquery-ui.css" />
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+    <script src="//ajax.googleapis.com/ajax/libs/jqueryui/1.10.1/jquery-ui.min.js"></script>
+    <script type=text/javascript src="//utility1.lightedge.com/jclark/js/flot/jquery.flot.js"></script>
+  </head>
+  <body>
+    <script type=text/javascript>
+      var graph_json = [];
+      function getUrlVars() {
+        var vars = {};
+        var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
+            vars[key] = value;
+        });
+        return vars;
+      }
+
+      function plotAccordingToChoices() {
+       var options = { yaxis: { min: 0},
+                       xaxis: { mode: 'time', timeformat: "%y/%m/%d" },
+                       legend: { container: $("#legend_box") }
+                     }
+
+        var data = [];
+        $("#check_box").find("input:checked").each(function () {
+          var key = $(this).attr("name");
+          if (key && graph_json[key]) {
+            data.push(graph_json[key]);
+          }
+        });
+        $.plot("#graph_box",data, options);
+      }
+
+      function display_graph(type,obj) {
+        $.ajax({
+          url: "json/stats_fetch.php?id=" + getUrlVars()['id'] + "&type=" + type + "&obj=" + obj,
+          type: "GET",
+          dataType: "json",
+          success: function (result) {
+            graph_json = result;
+            $.each(graph_json, function(key, val) {
+              $("#check_box").append("<input type='checkbox' name='" + key + "' id='id" + key + "'></input><label for='id" + key + "'>" + val.label + "</label><br>");
+            });
+            $("#check_box").find("input").click(plotAccordingToChoices);
+            $("#type_box input").button("enable");
+            $("#object_box input").button("enable");
+          },
+          error: function (xhr) {
+            console.log(xhr);
+          }
+        });
+      }
+
+      function display_object(id) {
+        $.ajax({
+          url: "json/stats_objects.php?id=" + getUrlVars()['id'] + "&type=" + id,
+          type: "GET",
+          dataType: "json",
+          success: function (result) {
+            $("#object_box").empty();
+            $.each(result, function(idx, val) {
+              $("#object_box").append("<input type=radio id='" + val + "' name=object /><label for='" + val + "'>" + val + "</label>");
+            });
+            $("#object_box").buttonset();
+            $("#type_box input").button("enable");
+          },
+          error: function (xhr) {
+            $("#body_box").empty().append("Ajax error");
+            $("#type_box input").button("enable");
+            console.log(xhr);
+          }
+        });
+
+        $("#object_box").on("click", "input", function (event) {
+          $("#type_box input").button("disable");
+          $("#object_box input").button("disable");
+          console.log($(this).attr('id') + id);
+          display_graph(id,$(this).attr('id')); 
+        });
+      }
+
+      $(document).ready(function () {
+        console.log(getUrlVars()['id']);
+
+        $.ajax({
+          url: "json/stats_types.php?id=" + getUrlVars()['id'],
+          type: "GET",
+          dataType: "json",
+          success: function (result) {
+            $("#type_box").empty();
+            $.each(result, function(idx, val) {
+              $("#type_box").append("<input type=radio id='" + val + "' name=type /><label for='" + val + "'>" + val + "</label>");
+            });
+            $("#type_box").buttonset();
+          },
+          error: function (xhr) {
+            $("#body_box").empty().append("Ajax error");
+            console.log(xhr);
+          }
+        })
+
+        $("#type_box").on("click", "input", function (event) {
+          $("#type_box input").button("disable");
+          $("#object_box").empty().append("Loading objects....");
+          $("#graph_box").empty();
+          $("#check_box").empty();
+          $("legend_box").empty();
+          display_object($(this).attr('id'));
+          console.log($(this).attr('id'));
+        });
+
+      });
+    </script>
+    <div id="body_box"></div><br>
+    <div id=type_box>Loading available object types....</div><br>
+    <div id=object_box></div><br>
+    <div id=graph_box style="min-height: 500px"></div><br>
+    <div id=check_box style="float: left"></div>
+    <div id=legend_box style="float: left"></div>
+  </body>
+</html>

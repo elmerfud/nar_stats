@@ -1,0 +1,26 @@
+<?php
+
+$_config['navisccli']['command'] = '/opt/Navisphere/bin/naviseccli';
+
+$_config['mongo']['connection_string'] = "FILL ME OUT";
+$_config['mongo']['options'] = array('replicaset' => 'repl1', "readPreference" => MongoClient::RP_SECONDARY_PREFERRED);
+$_config['mongo']['database'] = 'nar_stats';
+$_config['mongo']['collection']['hosts'] = 'san_hosts';
+$_config['mongo']['collection']['nar_files'] = 'san_nar_files';
+$_config['mongo']['collection']['nar_data'] = 'san_nar_data';
+
+$_config['logger']['http'] = 'syslog';
+$_config['logger']['cli'] = 'stdout';
+
+$_config['tmp_dir'] = '/tmp/';
+
+// Some scripts use IPC to communicate to forked children
+// This configures wait & check intervals for the queue
+// Default is sleep 5 seconds and check for queue messages 24 times
+// Nothing in 2 mins, forks will exit cleanly
+$_config['ipc']['prework_sleep'] = 5;
+$_config['ipc']['prework_intervals'] = 24;
+$_config['ipc']['postwork_sleep'] = 1;
+$_config['ipc']['postwork_intervals'] = 10;
+
+?>

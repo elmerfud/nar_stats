@@ -80,6 +80,9 @@
         $("#object_box").on("click", "input", function (event) {
           $("#type_box input").button("disable");
           $("#object_box input").button("disable");
+          $("#graph_box").empty();
+          $("#check_box").empty();
+          $("legend_box").empty();
           console.log($(this).attr('id') + id);
           display_graph(id,$(this).attr('id')); 
         });

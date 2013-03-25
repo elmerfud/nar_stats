@@ -1,15 +1,15 @@
 <?php
 require_once(dirname(__FILE__) . "/../lib/common.php");
 
-if (!isset($_GET['id'])) {
+if (!isset($_POST['id'])) {
     array_push($error,"No ID supplied");
 }
 
-if (!isset($_GET['type'])) {
+if (!isset($_POST['type'])) {
     array_push($error,"No type supplied");
 }
 
-if (!isset($_GET['obj'])) {
+if (!isset($_POST['obj'])) {
     array_push($error,"No type supplied");
 }
 
@@ -31,12 +31,18 @@ if (count($error)>=1) {
     die();
 }
 
-$start = new MongoDate(strtotime("3 days ago"));
-$end = new MongoDate();
-$find = array('sp_id' => new MongoId($_GET['id']),
-                'type' => $_GET['type'],
+if (isset($_POST['start_date'])&&isset($_POST['end_date'])) {
+    $start = new MongoDate(strtotime("{$_POST['start_date']} 00:00:00"));
+    $end = new MongoDate(strtotime("{$_POST['end_date']} 23:59:59"));
+} else {
+    $start = new MongoDate(strtotime("14 days ago"));
+    $end = new MongoDate();
+}
+
+$find = array('sp_id' => new MongoId($_POST['id']),
+                'type' => $_POST['type'],
            "timestamp" => array('$gt' => $start, '$lte' => $end),
-           'Object Name' => $_GET['obj']);
+           'Object Name' => $_POST['obj']);
 $color = array();
 try {
     $output = array();

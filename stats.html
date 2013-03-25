@@ -13,6 +13,7 @@
   <body>
     <script type=text/javascript>
       var graph_json = [];
+      var type = null;
       function getUrlVars() {
         var vars = {};
         var parts = window.location.href.replace(/[?&]+([^=&]+)=([^&]*)/gi, function(m,key,value) {
@@ -37,10 +38,11 @@
         $.plot("#graph_box",data, options);
       }
 
-      function display_graph(type,obj) {
+      function display_graph(obj) {
         $.ajax({
-          url: "json/stats_fetch.php?id=" + getUrlVars()['id'] + "&type=" + type + "&obj=" + obj,
-          type: "GET",
+          url: "json/stats_fetch.php",
+          type: "POST",
+          data: { 'id' : getUrlVars()['id'], 'type' : type, 'obj' : obj, 'start_date' : $("#start_date").val(), 'end_date' : $("#end_date").val() },
           dataType: "json",
           success: function (result) {
             graph_json = result;
@@ -57,10 +59,12 @@
         });
       }
 
-      function display_object(id) {
+      function display_object() {
+console.log(type);
         $.ajax({
-          url: "json/stats_objects.php?id=" + getUrlVars()['id'] + "&type=" + id,
-          type: "GET",
+          url: "json/stats_objects.php",
+          type: "POST",
+          data: { 'id' : getUrlVars()['id'], 'type' : type, 'start_date' : $("#start_date").val(), 'end_date' : $("#end_date").val() },
           dataType: "json",
           success: function (result) {
             $("#object_box").empty();
@@ -76,26 +80,20 @@
             console.log(xhr);
           }
         });
-
-        $("#object_box").on("click", "input", function (event) {
-          $("#type_box input").button("disable");
-          $("#object_box input").button("disable");
-          $("#graph_box").empty();
-          $("#check_box").empty();
-          $("legend_box").empty();
-          console.log($(this).attr('id') + id);
-          display_graph(id,$(this).attr('id')); 
-        });
       }
 
       $(document).ready(function () {
         console.log(getUrlVars()['id']);
+        $("#start_date").datepicker({ defaultDate: -14, dateFormat: 'yy-mm-dd' }).datepicker('setDate','-13');        
+        $("#end_date").datepicker({ dateFormat: 'yy-mm-dd' }).datepicker('setDate', '+0');
 
         $.ajax({
-          url: "json/stats_types.php?id=" + getUrlVars()['id'],
-          type: "GET",
+          url: "json/stats_types.php",
+          type: "POST",
+          data: { 'id' : getUrlVars()['id'], 'start_date' : $("#start_date").val(), 'end_date' : $("#end_date").val() },
           dataType: "json",
           success: function (result) {
+            console.log(result);
             $("#type_box").empty();
             $.each(result, function(idx, val) {
               $("#type_box").append("<input type=radio id='" + val + "' name=type /><label for='" + val + "'>" + val + "</label>");
@@ -108,19 +106,58 @@
           }
         })
 
+        $("#date_box").on("click", "button", function (event) {
+          $("#type_box").empty().append("Loading available object types....");
+          $("#object_box").empty();
+          $("#graph_box").empty();
+          $("#check_box").empty();
+          $("legend_box").empty();
+          graph_json = [];
+          plotAccordingToChoices();
+          $.ajax({
+            url: "json/stats_types.php",
+            type: "POST",
+            data: { 'id' : getUrlVars()['id'], 'start_date' : $("#start_date").val(), 'end_date' : $("#end_date").val() },
+            dataType: "json",
+            success: function (result) {
+              console.log(result);
+              $("#type_box").empty();
+              $.each(result, function(idx, val) {
+                $("#type_box").append("<input type=radio id='" + val + "' name=type /><label for='" + val + "'>" + val + "</label>");
+              });
+              $("#type_box").buttonset();
+            },
+            error: function (xhr) {
+              $("#body_box").empty().append("Ajax error");
+              console.log(xhr);
+            }
+          })
+        });
+
         $("#type_box").on("click", "input", function (event) {
+          type = $(this).attr('id');
           $("#type_box input").button("disable");
           $("#object_box").empty().append("Loading objects....");
           $("#graph_box").empty();
           $("#check_box").empty();
           $("legend_box").empty();
-          display_object($(this).attr('id'));
-          console.log($(this).attr('id'));
+          display_object();
+        });
+
+        $("#object_box").on("click", "input", function (event) {
+          $("#type_box input").button("disable");
+          $("#object_box input").button("disable");
+          $("#graph_box").empty();
+          $("#check_box").empty();
+          $("legend_box").empty();
+          console.log($(this).attr('id') + type);
+          display_graph($(this).attr('id'));
         });
 
       });
     </script>
-    <div id="body_box"></div><br>
+    <div id="body_box"></div>
+    <div id=date_box style="padding-bottom: 12px;">Start Date: <input type="text" id=start_date /> End Date: <input type="text" id=end_date /><button id=date_submit>Update Date Range</button></div>
     <div id=type_box>Loading available object types....</div><br>
     <div id=object_box></div><br>
     <div id=graph_box style="min-height: 500px"></div><br>
